@@ -114,7 +114,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         if (user == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR,"用户未登录");
         }
-        return user;
+        User newUser = this.getById(user.getId());
+        if (newUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR,"用户不存在");
+        }
+        return newUser;
     }
 
     /**

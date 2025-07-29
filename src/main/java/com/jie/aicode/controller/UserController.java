@@ -20,6 +20,7 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 
 
@@ -36,6 +37,11 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    /**
+     * 用户注册
+     * @param userRegisterRequest
+     * @return
+     */
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         if(ObjUtil.isEmpty(userRegisterRequest)){
@@ -86,6 +92,24 @@ public class UserController {
     public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
         return ResultUtils.success(userService.userLogout(request));
     }
+
+    /**
+     * 修改用户信息
+     */
+    @PostMapping("/edit")
+    public BaseResponse<Boolean> editUser(@RequestBody UserEditRequest userEditRequest) {
+        if(BeanUtil.isEmpty(userEditRequest)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        User user = new User();
+        userEditRequest.setPassword(userService.encryption(userEditRequest.getPassword()));
+        BeanUtil.copyProperties(userEditRequest, user);
+        user.setEditTime(new Date());
+        boolean result = userService.updateById(user);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR,"更新失败");
+        return ResultUtils.success(true);
+    }
+
 
     /**
      * 创建用户
