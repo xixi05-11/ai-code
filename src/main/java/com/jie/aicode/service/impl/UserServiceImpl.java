@@ -1,8 +1,4 @@
 package com.jie.aicode.service.impl;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
@@ -11,6 +7,7 @@ import com.jie.aicode.constant.UserConstant;
 import com.jie.aicode.exception.BusinessException;
 import com.jie.aicode.exception.ErrorCode;
 import com.jie.aicode.mapper.UserMapper;
+import com.jie.aicode.model.dto.user.UserChangePwdRequest;
 import com.jie.aicode.model.dto.user.UserQueryRequest;
 import com.jie.aicode.model.entity.User;
 import com.jie.aicode.model.enums.UserRoleEnum;
@@ -23,6 +20,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 用户 服务层实现。
@@ -205,6 +207,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         user.setUserPassword(encryption(UserConstant.DEFAULT_PASSWORD));
         return this.updateById(user);
     }
+
+    /**
+     * 修改密码
+     * @param userChangePwdRequest
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean changeUserPwd(UserChangePwdRequest userChangePwdRequest,HttpServletRequest request) {
+        String oldPassword = userChangePwdRequest.getOldPassword();
+        String userPassword = userChangePwdRequest.getUserPassword();
+        String checkPassword = userChangePwdRequest.getCheckPassword();
+        //参数校验
+        User user = this.getLoginUser(request);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在");
+        }
+        if (!userPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次密码不一致");
+        }
+        if (!encryption(oldPassword).equals(user.getUserPassword())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "旧密码错误");
+        }
+        if(userPassword.length() < 8){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度不能小于8位");
+        }
+        //修改密码
+        user.setUserPassword(encryption(userPassword));
+        boolean result = this.updateById(user);
+        if (!result) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "修改密码失败");
+        }
+        //登出
+        request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATE);
+        return true;
+    }
+
     /**
      * 加密密码
      * @param password

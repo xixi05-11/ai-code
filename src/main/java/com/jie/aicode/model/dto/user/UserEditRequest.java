@@ -9,20 +9,10 @@ import java.io.Serializable;
 public class UserEditRequest implements Serializable {
 
     /**
-     * id
-     */
-    private Long id;
-
-    /**
      * 用户昵称
      */
     private String userName;
-
-    /**
-     * 用户密码
-     */
-    private String password;
-
+    
     /**
      * 用户头像
      */

@@ -94,15 +94,28 @@ public class UserController {
     }
 
     /**
+     * 修改密码
+     */
+    @PostMapping("/changePwd")
+    public BaseResponse<Boolean> changePwd(@RequestBody UserChangePwdRequest userChangePwdRequest,
+                                           HttpServletRequest request) {
+        if (BeanUtil.isEmpty(userChangePwdRequest)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        boolean result = userService.changeUserPwd(userChangePwdRequest,request);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "修改密码失败");
+        return ResultUtils.success(true);
+    }
+    /**
      * 修改用户信息
      */
     @PostMapping("/edit")
-    public BaseResponse<Boolean> editUser(@RequestBody UserEditRequest userEditRequest) {
+    public BaseResponse<Boolean> editUser(@RequestBody UserEditRequest userEditRequest,
+                                          HttpServletRequest request) {
         if(BeanUtil.isEmpty(userEditRequest)){
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
-        User user = new User();
-        userEditRequest.setPassword(userService.encryption(userEditRequest.getPassword()));
+        User user = userService.getLoginUser(request);
         BeanUtil.copyProperties(userEditRequest, user);
         user.setEditTime(new Date());
         boolean result = userService.updateById(user);

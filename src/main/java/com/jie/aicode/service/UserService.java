@@ -1,5 +1,6 @@
 package com.jie.aicode.service;
 
+import com.jie.aicode.model.dto.user.UserChangePwdRequest;
 import com.jie.aicode.model.dto.user.UserQueryRequest;
 import com.jie.aicode.model.entity.User;
 import com.jie.aicode.model.vo.LoginUserVO;
@@ -104,4 +105,11 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean resetPassword(Long userId);
+
+    /**
+     * 修改密码
+     * @param userChangePwdRequest
+     * @return
+     */
+    boolean changeUserPwd(UserChangePwdRequest userChangePwdRequest,HttpServletRequest request);
 }
