@@ -4,15 +4,13 @@ import com.mybatisflex.codegen.Generator;
 import com.mybatisflex.codegen.config.ColumnConfig;
 import com.mybatisflex.codegen.config.GlobalConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import io.swagger.v3.core.util.Yaml;
-import org.springframework.boot.env.YamlPropertySourceLoader;
 
 /**
  * mybatis-flex
  */
 public class Codegen {
 
-    public static final String TABLE = "user";
+    public static final String TABLE = "app";
     public static void main(String[] args) {
         //配置数据源
 

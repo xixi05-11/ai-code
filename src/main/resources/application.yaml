@@ -1,6 +1,8 @@
 spring:
   application:
     name: ai-code
+  profiles:
+    active: local
   datasource:
     url: jdbc:mysql://localhost:3306/ai_code?characterEncoding=utf-8
     username: root
@@ -10,6 +12,34 @@ server:
   port: 8080
   servlet:
     context-path: /api
+
+# AI
+langchain4j:
+  open-ai:
+    streaming-chat-model:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key: ${ali_key}
+      model-name: deepseek-v3
+      max-tokens: 8192
+      log-requests: true
+      log-responses: true
+      max-completion-tokens: 8192
+      max-retries: 1   #todo 暂时设置为1 节省
+
+    chat-model:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key: ${ali_key}
+      model-name: deepseek-v3
+      log-requests: true
+      log-responses: true
+      temperature: 0.7
+      max-completion-tokens: 8192
+      max-retries: 1   #todo 暂时设置为1 节省
+      strict-json-schema: true
+      # deepseek不支持此
+#      supported-capabilities: response_format_json_schema
+      response-format: json_object
+
 # springdoc-openapi项目配置
 springdoc:
   group-configs:

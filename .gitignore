@@ -1,4 +1,7 @@
 HELP.md
+temp/
+application-local.yaml
+
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -31,3 +34,4 @@ build/
 
 ### VS Code ###
 .vscode/
+/src/main/java/com/jie/aicode/abandon/
