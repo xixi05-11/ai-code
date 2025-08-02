@@ -1,18 +1,37 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        max-age: 259200
+
 spring:
   application:
     name: ai-code
   profiles:
     active: local
+  session:
+    store-type: redis
+    timeout: 259200
+
   datasource:
     url: jdbc:mysql://localhost:3306/ai_code?characterEncoding=utf-8
     username: root
     password: zzz123321
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+      ttl: 3600
 
-server:
-  port: 8080
-  servlet:
-    context-path: /api
 
+
+#mybatis-flex:
+#  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 # AI
 langchain4j:
   open-ai:

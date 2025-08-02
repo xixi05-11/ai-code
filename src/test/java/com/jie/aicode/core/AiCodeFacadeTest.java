@@ -20,13 +20,14 @@ class AiCodeFacadeTest {
     @Test
     void createAndSaveCode() {
         File file = aiCodeFacade.createAndSaveCode("生成一个登陆界面 不超过20行",
-                CodeGenTypeEnum.MULTI_FILE);
+                CodeGenTypeEnum.MULTI_FILE,1L);
         assertNotNull(file);
     }
 
     @Test
     void createAndSaveCodeStream() {
-        Flux<String> codeStream = aiCodeFacade.createAndSaveCodeStream("任务记录网站,少于30行", CodeGenTypeEnum.MULTI_FILE);
+        Flux<String> codeStream = aiCodeFacade.createAndSaveCodeStream("任务记录网站,少于30行",
+                CodeGenTypeEnum.MULTI_FILE,2L);
         // 阻塞等待所有数据收集完成
         List<String> result = codeStream.collectList().block();
         // 验证结果

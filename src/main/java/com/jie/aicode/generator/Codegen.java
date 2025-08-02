@@ -10,7 +10,7 @@ import com.zaxxer.hikari.HikariDataSource;
  */
 public class Codegen {
 
-    public static final String TABLE = "app";
+    public static final String TABLE = "chat_history";
     public static void main(String[] args) {
         //配置数据源
 

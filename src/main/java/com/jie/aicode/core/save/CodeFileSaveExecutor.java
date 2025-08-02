@@ -19,14 +19,15 @@ public class CodeFileSaveExecutor {
      * 保存并写入文件
      * @param result
      * @param codeGenTypeEnum
+     * @param appId
      * @return
      */
-    public static File save(Object result, CodeGenTypeEnum codeGenTypeEnum) {
+    public static File save(Object result, CodeGenTypeEnum codeGenTypeEnum,Long appId) {
         return switch (codeGenTypeEnum) {
             case HTML:
-                yield htmlCodeFileSave.save((HtmlCodeResult) result);
+                yield htmlCodeFileSave.save((HtmlCodeResult) result,appId);
             case MULTI_FILE:
-                yield multiFileCodeFileSave.save((MultiFileCodeResult) result);
+                yield multiFileCodeFileSave.save((MultiFileCodeResult) result,appId);
             default:
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "暂时不支持的代码生成类型");
         };
