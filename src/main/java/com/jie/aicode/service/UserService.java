@@ -19,6 +19,7 @@ import java.util.List;
  */
 public interface UserService extends IService<User> {
 
+
     /**
      * 用户注册
      *

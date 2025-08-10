@@ -12,8 +12,12 @@ spring:
   profiles:
     active: local
   session:
-    store-type: redis
+    redis:
+      namespace: "ai_code:session"   # 定义存储在 Redis 中的 session 数据的命名空间
+      flush-mode: on_save             # 每次保存或更新 session 时立即将数据同步到 Redis
+      save-mode: always
     timeout: 259200
+
 
   datasource:
     url: jdbc:mysql://localhost:3306/ai_code?characterEncoding=utf-8

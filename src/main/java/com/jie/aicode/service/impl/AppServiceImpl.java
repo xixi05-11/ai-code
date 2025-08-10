@@ -8,6 +8,7 @@ import com.jie.aicode.constant.AppConstant;
 import com.jie.aicode.core.AiCodeFacade;
 import com.jie.aicode.exception.BusinessException;
 import com.jie.aicode.exception.ErrorCode;
+import com.jie.aicode.exception.ThrowUtils;
 import com.jie.aicode.model.dto.app.AppQueryRequest;
 import com.jie.aicode.model.entity.User;
 import com.jie.aicode.model.enums.ChatHistoryMessageTypeEnum;
@@ -15,6 +16,7 @@ import com.jie.aicode.model.enums.CodeGenTypeEnum;
 import com.jie.aicode.model.vo.AppVO;
 import com.jie.aicode.model.vo.UserVO;
 import com.jie.aicode.service.ChatHistoryService;
+import com.jie.aicode.service.ScreenshotService;
 import com.jie.aicode.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -52,6 +54,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 
     @Resource
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private ScreenshotService screenshotService;
+
+
 
     /**
      * 获取脱敏APP信息
@@ -239,6 +246,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"部署失败" + e.getMessage());
         }
         //更新应用信息
+        // 构建应用访问 URL
+        String appDeployUrl = String.format("%s/%s/", AppConstant.DEPLOY_HOST, deployKey);
+        // 异步生成截图并更新应用封面
+        generateAppScreenshotAsync(appId, appDeployUrl);
         App newApp = new App();
         newApp.setId(appId);
         newApp.setDeployedTime(LocalDateTime.now());
@@ -247,7 +258,29 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if(!result){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"部署失败");
         }
-        return String.format("%s/%s/", AppConstant.DEPLOY_HOST,deployKey);
+        return appDeployUrl;
+    }
+
+
+
+    /**
+     * 异步生成应用截图并更新封面
+     * @param appId  应用ID
+     * @param appUrl 应用访问URL
+     */
+    @Override
+    public void generateAppScreenshotAsync(Long appId, String appUrl) {
+        // 使用虚拟线程异步执行
+        Thread.startVirtualThread(() -> {
+            // 调用截图服务生成截图并上传
+            String screenshotUrl = screenshotService.generateAndUploadScreenshot(appUrl);
+            // 更新应用封面字段
+            App updateApp = new App();
+            updateApp.setId(appId);
+            updateApp.setCover(screenshotUrl);
+            boolean updated = this.updateById(updateApp);
+            ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+        });
     }
 
     /**

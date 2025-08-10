@@ -3,6 +3,7 @@ package com.jie.aicode.controller;
 import com.jie.aicode.annotation.AuthCheck;
 import com.jie.aicode.common.BaseResponse;
 import com.jie.aicode.common.ResultUtils;
+import com.jie.aicode.config.CosClientConfig;
 import com.jie.aicode.constant.UserConstant;
 import com.jie.aicode.cos.CosManager;
 import com.jie.aicode.exception.BusinessException;
@@ -31,34 +32,36 @@ public class FileController {
     private final CosManager cosManager;
 
     private final UserService userService;
+
+    private final CosClientConfig cosClientConfig;
+
     /**
      * 测试文件上传
      *
      * @param multipartFile
      * @return
      */
-    @PostMapping("/test/upload")
-    public BaseResponse<String> testUploadFile(@RequestPart("file") MultipartFile multipartFile,
-                                               HttpServletRequest request) {
+    @PostMapping("/user/upload")
+    public BaseResponse<String> UploadFile(@RequestPart("file") MultipartFile multipartFile,
+                                           HttpServletRequest request) {
         // 文件目录
+        User loginUser = userService.getLoginUser(request);
         String filename = multipartFile.getOriginalFilename();
-        String filepath = String.format("/test/%s", filename);
+        String filepath = String.format("/%s/%s", loginUser.getId(), filename);
         File file = null;
         try {
             // 上传文件
             file = File.createTempFile(filepath, null);
             multipartFile.transferTo(file);
             cosManager.putObject(filepath, file);
-
             //存入数据库
-            User loginUser = userService.getLoginUser(request);
-            loginUser.setUserAvatar("https://ai-code-1349918128.cos.ap-guangzhou.myqcloud.com" + File.separator + filepath);
+            loginUser.setUserAvatar(cosClientConfig.getHost() + File.separator + filepath);
             boolean result = userService.updateById(loginUser);
             if (!result) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
             }
             // 返回可访问地址
-            return ResultUtils.success("https://ai-code-1349918128.cos.ap-guangzhou.myqcloud.com"+ File.separator +filepath);
+            return ResultUtils.success(cosClientConfig.getHost() + File.separator + filepath);
         } catch (Exception e) {
             log.error("file upload error, filepath = " + filepath, e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");

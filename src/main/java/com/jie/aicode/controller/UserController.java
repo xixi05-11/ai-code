@@ -7,6 +7,7 @@ import com.jie.aicode.common.BaseResponse;
 import com.jie.aicode.common.DeleteRequest;
 import com.jie.aicode.common.ResultUtils;
 import com.jie.aicode.constant.UserConstant;
+import com.jie.aicode.cos.CosManager;
 import com.jie.aicode.exception.BusinessException;
 import com.jie.aicode.exception.ErrorCode;
 import com.jie.aicode.exception.ThrowUtils;
@@ -18,8 +19,12 @@ import com.jie.aicode.service.UserService;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.Date;
 import java.util.List;
 
@@ -32,11 +37,56 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/user")
+@Slf4j
 public class UserController {
 
     @Resource
     private UserService userService;
 
+    @Resource
+    private CosManager cosManager;
+
+    @Value("${cos.client.host}")
+    private String host;
+
+
+    /**
+     * 头像上传
+     */
+    @PostMapping("/avatar/upload")
+    public BaseResponse<String> UploadAvatar(@RequestPart("file") MultipartFile multipartFile,
+                                             HttpServletRequest request) {
+        // 文件目录
+        User loginUser = userService.getLoginUser(request);
+        String filename = multipartFile.getOriginalFilename();
+        String filepath = String.format("/%s/%s", loginUser.getId(), filename);
+        File file = null;
+        try {
+            // 上传文件
+            file = File.createTempFile(filepath, null);
+            multipartFile.transferTo(file);
+            cosManager.putObject(filepath, file);
+            //存入数据库
+            loginUser.setUserAvatar(host + File.separator + filepath);
+            boolean result = userService.updateById(loginUser);
+            if (!result) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
+            }
+            // 返回可访问地址
+            return ResultUtils.success(host + File.separator + filepath);
+        } catch (Exception e) {
+            log.error("file upload error, filepath = " + filepath, e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
+        } finally {
+            if (file != null) {
+                // 删除临时文件
+                boolean delete = file.delete();
+                if (!delete) {
+                    log.error("file delete error, filepath = {}", filepath);
+                }
+            }
+        }
+    }
     /**
      * 用户注册
      * @param userRegisterRequest
