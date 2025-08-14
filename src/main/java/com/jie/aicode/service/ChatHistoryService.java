@@ -1,11 +1,11 @@
 package com.jie.aicode.service;
 
 import com.jie.aicode.model.dto.chatHistory.ChatHistoryQueryRequest;
+import com.jie.aicode.model.entity.ChatHistory;
 import com.jie.aicode.model.entity.User;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
-import com.jie.aicode.model.entity.ChatHistory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.time.LocalDateTime;

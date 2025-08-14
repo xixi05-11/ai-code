@@ -6,23 +6,25 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.jie.aicode.constant.AppConstant;
 import com.jie.aicode.core.AiCodeFacade;
+import com.jie.aicode.core.builder.VueBuilder;
+import com.jie.aicode.core.handler.StreamHandlerExecutor;
 import com.jie.aicode.exception.BusinessException;
 import com.jie.aicode.exception.ErrorCode;
 import com.jie.aicode.exception.ThrowUtils;
+import com.jie.aicode.mapper.AppMapper;
 import com.jie.aicode.model.dto.app.AppQueryRequest;
+import com.jie.aicode.model.entity.App;
 import com.jie.aicode.model.entity.User;
 import com.jie.aicode.model.enums.ChatHistoryMessageTypeEnum;
 import com.jie.aicode.model.enums.CodeGenTypeEnum;
 import com.jie.aicode.model.vo.AppVO;
 import com.jie.aicode.model.vo.UserVO;
+import com.jie.aicode.service.AppService;
 import com.jie.aicode.service.ChatHistoryService;
 import com.jie.aicode.service.ScreenshotService;
 import com.jie.aicode.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import com.jie.aicode.model.entity.App;
-import com.jie.aicode.mapper.AppMapper;
-import com.jie.aicode.service.AppService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,10 +33,7 @@ import reactor.core.publisher.Flux;
 import java.io.File;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -57,6 +56,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 
     @Resource
     private ScreenshotService screenshotService;
+
+    @Resource
+    private StreamHandlerExecutor streamHandlerExecutor;
 
 
 
@@ -161,7 +163,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if (app == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "应用不存在");
         }
-        //仅仅本人可以和自己的ap交互
+        //仅仅本人可以和自己的app交互
         if(!app.getUserId().equals(loginUser.getId())){
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "无权限");
         }
@@ -179,25 +181,18 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         }
         //生成代码并收集入库
         Flux<String> codeStream = aiCodeFacade.createAndSaveCodeStream(message, enumByValue, appId);
-        StringBuilder aiSb = new StringBuilder();
-        return codeStream.map(chunk ->{
-            aiSb.append(chunk);
-            return chunk;
-        }).doOnComplete(() -> {
-            //插入AI消息入库
-            boolean result1 = chatHistoryService.addChatMessage(appId, aiSb.toString(),
-                    ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-            if (!result1) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "消息入库失败");
+        /**
+         * todo: 添加VUE_MODIFY类型 暂时设置
+         */
+        if(enumByValue == CodeGenTypeEnum.VUE){
+            app.setCodeGenType(CodeGenTypeEnum.VUE_MODIFY.getValue());
+            boolean b = this.updateById(app);
+            if(!b){
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成代码失败");
             }
-        }).doOnError(error ->{
-            //插入AI错误消息入库
-            boolean result1 = chatHistoryService.addChatMessage(appId, "AI出现错误" + error.getMessage(),
-                    ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-            if (!result1) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "消息入库失败");
-            }
-        });
+        }
+        //处理流式数据
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, enumByValue);
     }
 
     /**
@@ -231,17 +226,42 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         }
         //查找源目录
         String type = app.getCodeGenType();
+        if(Objects.equals(type, "vue_modify")) {
+            type = "vue";
+        }
         String path = AppConstant.CODE_DIR + File.separator+ type + "_" + appId;
         //源文件
         File file = new File(path);
         if(!file.exists() || !file.isDirectory()){
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"代码不存在,请重新生成");
         }
+        //vue的部署
+        if(type.equals(CodeGenTypeEnum.VUE.getValue())){
+            boolean result = VueBuilder.buildProject(path);
+            if(!result){
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR,"部署失败");
+            }
+            File dist = new File(path, "dist");
+            if(!dist.exists() || !dist.isDirectory()){
+                throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"代码不存在,请重新生成");
+            }
+            file = dist;
+        }
         //复制进部署目录
         String deployPath = AppConstant.CODE_DEPLOY_DIR + File.separator + deployKey;
         File deployFile = new File(deployPath);
         try {
-            FileUtil.copyFilesFromDir(file, deployFile,true);
+            if (deployFile.exists()) {
+                FileUtil.clean(deployFile);
+            }
+            // 如果是Vue项目的dist目录，则复制其中的内容而不是整个目录
+            if (type.equals(CodeGenTypeEnum.VUE.getValue()) && file.getName().equals("dist")) {
+                // 只复制dist目录中的内容，而不是dist目录本身
+                FileUtil.copyContent(file, deployFile, true);
+            } else {
+                // 其他情况保持原有逻辑
+                FileUtil.copyFilesFromDir(file, deployFile,true);
+            }
         }catch (Exception e){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"部署失败" + e.getMessage());
         }

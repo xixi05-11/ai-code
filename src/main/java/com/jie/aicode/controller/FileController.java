@@ -1,10 +1,8 @@
 package com.jie.aicode.controller;
 
-import com.jie.aicode.annotation.AuthCheck;
 import com.jie.aicode.common.BaseResponse;
 import com.jie.aicode.common.ResultUtils;
 import com.jie.aicode.config.CosClientConfig;
-import com.jie.aicode.constant.UserConstant;
 import com.jie.aicode.cos.CosManager;
 import com.jie.aicode.exception.BusinessException;
 import com.jie.aicode.exception.ErrorCode;

@@ -1,7 +1,7 @@
 package com.jie.aicode.mapper;
 
-import com.mybatisflex.core.BaseMapper;
 import com.jie.aicode.model.entity.App;
+import com.mybatisflex.core.BaseMapper;
 
 /**
  * 应用 映射层。

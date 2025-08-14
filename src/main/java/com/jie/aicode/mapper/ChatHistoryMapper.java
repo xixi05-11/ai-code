@@ -1,7 +1,7 @@
 package com.jie.aicode.mapper;
 
-import com.mybatisflex.core.BaseMapper;
 import com.jie.aicode.model.entity.ChatHistory;
+import com.mybatisflex.core.BaseMapper;
 
 /**
  * 对话历史 映射层。

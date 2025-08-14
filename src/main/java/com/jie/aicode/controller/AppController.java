@@ -3,6 +3,7 @@ package com.jie.aicode.controller;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.jie.aicode.ai.CodeTypeChoice.AiCodeTypeChoiceService;
 import com.jie.aicode.annotation.AuthCheck;
 import com.jie.aicode.common.BaseResponse;
 import com.jie.aicode.common.DeleteRequest;
@@ -13,9 +14,11 @@ import com.jie.aicode.exception.BusinessException;
 import com.jie.aicode.exception.ErrorCode;
 import com.jie.aicode.exception.ThrowUtils;
 import com.jie.aicode.model.dto.app.*;
+import com.jie.aicode.model.entity.App;
 import com.jie.aicode.model.entity.User;
 import com.jie.aicode.model.enums.CodeGenTypeEnum;
 import com.jie.aicode.model.vo.AppVO;
+import com.jie.aicode.service.AppService;
 import com.jie.aicode.service.ProjectDownloadService;
 import com.jie.aicode.service.UserService;
 import com.mybatisflex.core.paginate.Page;
@@ -26,8 +29,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
-import com.jie.aicode.model.entity.App;
-import com.jie.aicode.service.AppService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -55,6 +56,9 @@ public class AppController {
 
     @Resource
     private ProjectDownloadService projectDownloadService;
+
+    @Resource
+    private AiCodeTypeChoiceService aiCodeTypeChoiceService;
 
     /**
      * 下载应用代码
@@ -170,8 +174,9 @@ public class AppController {
         app.setUserId(loginUser.getId());
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 暂时设置为多文件生成
-        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
+        //由ai选择生成的代码类型
+        CodeGenTypeEnum codeGenTypeEnum = aiCodeTypeChoiceService.selectCodeType(initPrompt);
+        app.setCodeGenType(codeGenTypeEnum.getValue());
         // 插入数据库
         boolean result = appService.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -281,7 +286,6 @@ public class AppController {
 
     /**
      * 分页获取精选应用列表
-     *
      * @param appQueryRequest 查询请求
      * @return 精选应用列表
      */

@@ -7,19 +7,17 @@ import com.jie.aicode.constant.UserConstant;
 import com.jie.aicode.exception.ErrorCode;
 import com.jie.aicode.exception.ThrowUtils;
 import com.jie.aicode.model.dto.chatHistory.ChatHistoryQueryRequest;
+import com.jie.aicode.model.entity.ChatHistory;
 import com.jie.aicode.model.entity.User;
+import com.jie.aicode.service.ChatHistoryService;
 import com.jie.aicode.service.UserService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import com.jie.aicode.model.entity.ChatHistory;
-import com.jie.aicode.service.ChatHistoryService;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 对话历史 控制层。
@@ -38,7 +36,7 @@ public class ChatHistoryController {
     private UserService userService;
 
     /**
-     * 分页查询某个应用的对话历史（游标查询）
+     * 分页查询某个应用的对话历史
      * @param appId          应用ID
      * @param pageSize       页面大小
      * @param lastCreateTime 最后一条记录的创建时间

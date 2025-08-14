@@ -10,7 +10,9 @@ import lombok.Getter;
 public enum CodeGenTypeEnum {
 
     HTML("原生 HTML 模式", "html"),
-    MULTI_FILE("原生多文件模式", "multi_file");
+    MULTI_FILE("原生多文件模式", "multi_file"),
+    VUE("Vue 模式", "vue"),
+    VUE_MODIFY("修改Vue", "vue_modify");
 
     private final String text;
     private final String value;

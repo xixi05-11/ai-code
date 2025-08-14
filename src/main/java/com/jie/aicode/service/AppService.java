@@ -1,11 +1,12 @@
 package com.jie.aicode.service;
 
 import com.jie.aicode.model.dto.app.AppQueryRequest;
+import com.jie.aicode.model.entity.App;
 import com.jie.aicode.model.entity.User;
+import com.jie.aicode.model.enums.CodeGenTypeEnum;
 import com.jie.aicode.model.vo.AppVO;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
-import com.jie.aicode.model.entity.App;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
