@@ -182,7 +182,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         //生成代码并收集入库
         Flux<String> codeStream = aiCodeFacade.createAndSaveCodeStream(message, enumByValue, appId);
         /**
-         * todo: 添加VUE_MODIFY类型 暂时设置
+         * todo: 设置VUE_MODIFY类型 暂时设置
          */
         if(enumByValue == CodeGenTypeEnum.VUE){
             app.setCodeGenType(CodeGenTypeEnum.VUE_MODIFY.getValue());

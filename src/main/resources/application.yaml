@@ -44,6 +44,7 @@ langchain4j:
       api-key: ${ali_key}
       model-name: deepseek-v3
       max-tokens: 8192
+      temperature: 0.7
       log-requests: true
       log-responses: true
       max-completion-tokens: 8192
@@ -62,6 +63,25 @@ langchain4j:
       # deepseek不支持此
 #      supported-capabilities: response_format_json_schema
 #      response-format: json_object
+
+    # 推理 AI 模型配置（用于复杂的推理任务）
+    thinking-streaming-chat-model:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key: ${ali_key}
+      model-name: deepseek-v3
+      max-tokens: 32768
+      temperature: 0.3
+      log-requests: true
+      log-responses: true
+
+    # 智能路由 AI 模型配置（用于简单的分类任务）
+    simple-chat-model:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key: ${ali_key}
+      model-name: deepseek-v3
+      log-requests: true
+      log-responses: true
+
 
 # springdoc-openapi项目配置
 springdoc:

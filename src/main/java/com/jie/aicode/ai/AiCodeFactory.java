@@ -3,9 +3,11 @@ package com.jie.aicode.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jie.aicode.ai.guardrail.PromptInputGuardrail;
 import com.jie.aicode.ai.tools.*;
 import com.jie.aicode.model.enums.CodeGenTypeEnum;
 import com.jie.aicode.service.ChatHistoryService;
+import com.jie.aicode.utils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -22,14 +24,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AiCodeFactory {
 
-    @Resource
+    @Resource(name = "openAiChatModel")
     private ChatModel chatModel;
-
-    @Resource
-    private StreamingChatModel openAiStreamingChatModel;
-
-    @Resource
-    private StreamingChatModel thinkingChatModel;
 
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
@@ -68,26 +64,44 @@ public class AiCodeFactory {
             //将聊天记录保存到内存中
             chatHistoryService.saveChatHistoryToMemory(appId, chatMemory, 10);
             aiCodeService = switch (codeGenTypeEnum) {
-                case HTML, MULTI_FILE -> AiServices.builder(AiCodeService.class)
-                        .chatModel(chatModel)
-                        .streamingChatModel(openAiStreamingChatModel)
-                        .chatMemory(chatMemory)
-                        .build();
-                case VUE, VUE_MODIFY -> AiServices.builder(AiCodeService.class)
-                        .streamingChatModel(thinkingChatModel)
-                        .chatMemoryProvider(memoryId -> chatMemory)
-                        .tools(
-                                new FileWriteTool(),
-                                new FileReadTool(),
-                                new FileDirReadTool(),
-                                new FileModifyTool(),
-                                new FileDeleteTool()
-                        )
-                        //工具调用错误的处理
-                        .hallucinatedToolNameStrategy(request ->
-                                ToolExecutionResultMessage.toolExecutionResultMessage(request,
-                                        "no tool called" + request.name()))
-                        .build();
+                case HTML, MULTI_FILE -> {
+                    // 创建OpenAI流式模型
+                    StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype",
+                            StreamingChatModel.class);
+
+                    yield AiServices.builder(AiCodeService.class)
+                            .chatModel(chatModel)
+                            .streamingChatModel(openAiStreamingChatModel)
+                            .chatMemory(chatMemory)
+                            .inputGuardrails(new PromptInputGuardrail())
+                            .build();
+                }
+                case VUE, VUE_MODIFY -> {
+                    // 创建深度思考流式模型 用于Vue项目
+                    StreamingChatModel thinkingStreamingChatModel = SpringContextUtil.getBean("thinkingStreamingChatModel",
+                            StreamingChatModel.class);
+
+                    yield AiServices.builder(AiCodeService.class)
+                            .streamingChatModel(thinkingStreamingChatModel)
+                            .chatMemoryProvider(memoryId -> chatMemory)
+                            .tools(
+                                    new FileWriteTool(),
+                                    new FileReadTool(),
+                                    new FileDirReadTool(),
+                                    new FileModifyTool(),
+                                    new FileDeleteTool()
+                            )
+                            //输入内容过滤
+                            .inputGuardrails(new PromptInputGuardrail())
+                            //设置tool最多调用的次数
+                            .maxSequentialToolsInvocations(30)
+                            //工具调用错误的处理
+                            .hallucinatedToolNameStrategy(request ->
+                                    ToolExecutionResultMessage.toolExecutionResultMessage(request,
+                                            "no tool called" + request.name()))
+                            .build();
+                }
+
             };
 
         }

@@ -117,6 +117,13 @@
             <artifactId>spring-session-data-redis</artifactId>
         </dependency>
 
+        <!-- redisson -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.50.0</version>
+        </dependency>
+
 
         <!--mybatis-flex-->
         <dependency>

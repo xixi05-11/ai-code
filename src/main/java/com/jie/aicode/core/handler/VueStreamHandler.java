@@ -11,10 +11,7 @@ import com.jie.aicode.core.builder.VueBuilder;
 import com.jie.aicode.model.entity.User;
 import com.jie.aicode.model.enums.ChatHistoryMessageTypeEnum;
 import com.jie.aicode.service.ChatHistoryService;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 

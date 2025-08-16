@@ -3,8 +3,10 @@ package com.jie.aicode.controller;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.jie.aicode.ai.CodeTypeChoice.AiCodeTypeChoiceService;
+import com.jie.aicode.ai.simpleAiCode.SimpleAiCodeFactory;
+import com.jie.aicode.ai.simpleAiCode.SimpleAiCodeService;
 import com.jie.aicode.annotation.AuthCheck;
+import com.jie.aicode.annotation.Limit;
 import com.jie.aicode.common.BaseResponse;
 import com.jie.aicode.common.DeleteRequest;
 import com.jie.aicode.common.ResultUtils;
@@ -17,6 +19,7 @@ import com.jie.aicode.model.dto.app.*;
 import com.jie.aicode.model.entity.App;
 import com.jie.aicode.model.entity.User;
 import com.jie.aicode.model.enums.CodeGenTypeEnum;
+import com.jie.aicode.model.enums.LimitType;
 import com.jie.aicode.model.vo.AppVO;
 import com.jie.aicode.service.AppService;
 import com.jie.aicode.service.ProjectDownloadService;
@@ -26,6 +29,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -57,8 +61,11 @@ public class AppController {
     @Resource
     private ProjectDownloadService projectDownloadService;
 
+//    @Resource
+//    private AiCodeTypeChoiceService aiCodeTypeChoiceService;
+
     @Resource
-    private AiCodeTypeChoiceService aiCodeTypeChoiceService;
+    private SimpleAiCodeFactory simpleAiCodeFactory;
 
     /**
      * 下载应用代码
@@ -97,6 +104,7 @@ public class AppController {
 
     /**
      * 应用部署
+     *
      * @param appDeployRequest 部署请求
      * @param request          请求
      * @return 部署 URL
@@ -116,12 +124,14 @@ public class AppController {
 
     /**
      * 生成代码
+     *
      * @param appId
      * @param message
      * @param request
      * @return
      */
     @GetMapping(value = "/chat/create/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Limit(limitType = LimitType.USER,rate = 1L, msg = "ai访问过于频繁,请稍后再试")
     public Flux<ServerSentEvent<String>> createCode(@RequestParam Long appId,
                                                     @RequestParam String message,
                                                     HttpServletRequest request) {
@@ -172,10 +182,14 @@ public class AppController {
         App app = new App();
         BeanUtil.copyProperties(appAddRequest, app);
         app.setUserId(loginUser.getId());
-        // 应用名称暂时为 initPrompt 前 12 位
-        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
+        //创建ai实列
+        SimpleAiCodeService simpleAiCodeService = simpleAiCodeFactory.getAiCodeTypeChoice();
+
+        //ai生成app名称
+        String title = simpleAiCodeService.createTitle(initPrompt);
+        app.setAppName(title);
         //由ai选择生成的代码类型
-        CodeGenTypeEnum codeGenTypeEnum = aiCodeTypeChoiceService.selectCodeType(initPrompt);
+        CodeGenTypeEnum codeGenTypeEnum = simpleAiCodeService.selectCodeType(initPrompt);
         app.setCodeGenType(codeGenTypeEnum.getValue());
         // 插入数据库
         boolean result = appService.save(app);
@@ -286,10 +300,16 @@ public class AppController {
 
     /**
      * 分页获取精选应用列表
+     *
      * @param appQueryRequest 查询请求
      * @return 精选应用列表
      */
     @PostMapping("/list/selected/page/vo")
+    @Cacheable(
+            value = "good_app_page",
+            key = "T(com.jie.aicode.utils.CacheKeyUtil).createCacheKey(# appQueryRequest)",
+            condition = "#appQueryRequest.pageNum < 10"
+    )
     public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 限制每页最多 20 个

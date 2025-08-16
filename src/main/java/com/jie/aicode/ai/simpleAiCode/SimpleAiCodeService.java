@@ -1,4 +1,4 @@
-package com.jie.aicode.ai.CodeTypeChoice;
+package com.jie.aicode.ai.simpleAiCode;
 
 import com.jie.aicode.model.enums.CodeGenTypeEnum;
 import dev.langchain4j.service.SystemMessage;
@@ -9,7 +9,7 @@ import dev.langchain4j.service.SystemMessage;
  *
  * @author yupi
  */
-public interface AiCodeTypeChoiceService {
+public interface SimpleAiCodeService {
 
     /**
      * 根据用户需求智能选择代码生成类型
@@ -18,4 +18,7 @@ public interface AiCodeTypeChoiceService {
      */
     @SystemMessage(fromResource = "prompt/select-codeType-prompt.txt")
     CodeGenTypeEnum selectCodeType(String userPrompt);
+
+    @SystemMessage(fromResource = "prompt/create-title-prompt.txt")
+    String createTitle(String userPrompt);
 }
