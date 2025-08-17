@@ -131,7 +131,7 @@ public class AppController {
      * @return
      */
     @GetMapping(value = "/chat/create/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Limit(limitType = LimitType.USER,rate = 1L, msg = "ai访问过于频繁,请稍后再试")
+    @Limit(limitType = LimitType.USER,rate = 5L, msg = "ai访问过于频繁,请稍后再试")
     public Flux<ServerSentEvent<String>> createCode(@RequestParam Long appId,
                                                     @RequestParam String message,
                                                     HttpServletRequest request) {

@@ -19,6 +19,8 @@ import com.jie.aicode.model.enums.ChatHistoryMessageTypeEnum;
 import com.jie.aicode.model.enums.CodeGenTypeEnum;
 import com.jie.aicode.model.vo.AppVO;
 import com.jie.aicode.model.vo.UserVO;
+import com.jie.aicode.monitor.MonitorContext;
+import com.jie.aicode.monitor.MonitorContextShare;
 import com.jie.aicode.service.AppService;
 import com.jie.aicode.service.ChatHistoryService;
 import com.jie.aicode.service.ScreenshotService;
@@ -179,8 +181,16 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "消息入库失败");
         }
+        //设置上下文
+        MonitorContextShare.setContext(MonitorContext.builder()
+                .appId(appId.toString())
+                .userId(loginUser.getId().toString())
+                .build());
+
         //生成代码并收集入库
         Flux<String> codeStream = aiCodeFacade.createAndSaveCodeStream(message, enumByValue, appId);
+
+        //
         /**
          * todo: 设置VUE_MODIFY类型 暂时设置
          */
@@ -192,7 +202,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             }
         }
         //处理流式数据
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, enumByValue);
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, enumByValue)
+                // finally 清楚上下文
+                .doFinally(signalType -> MonitorContextShare.clearContext());
     }
 
     /**

@@ -35,6 +35,13 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements UserService{
 
+    /**
+     * 用户注册
+     * @param userAccount
+     * @param userPassword
+     * @param checkPassword
+     * @return
+     */
     @Override
     public long register(String userAccount, String userPassword, String checkPassword) {
         //参数校验
@@ -70,6 +77,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         return user.getId();
     }
 
+    /**
+     *  用户登录
+     * @param userAccount  用户账户
+     * @param userPassword 用户密码
+     * @param request
+     * @return
+     */
     @Override
     public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         //参数校验

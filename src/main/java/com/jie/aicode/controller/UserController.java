@@ -38,7 +38,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/user")
 @Slf4j
-public class UserController {
+public class   UserController {
 
     @Resource
     private UserService userService;

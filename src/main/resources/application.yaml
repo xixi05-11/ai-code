@@ -31,7 +31,15 @@ spring:
       database: 0
       ttl: 3600
 
-
+# 管理监控端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
 
 #mybatis-flex:
 #  configuration:
